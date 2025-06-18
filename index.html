@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WeatherSync - iOS 26 Glassmorphism</title>
+    <title>Astro-WeatherSync</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -19,11 +19,6 @@
             --accent-blue: #007aff; /* Khas iOS */
             --accent-green: #34c759;
             --accent-purple: #af52de;
-
-            /* Warna untuk grafik */
-            --graph-line-color: #66a6ff; /* Biru cerah */
-            --graph-fill-color: rgba(102, 166, 255, 0.3); /* Biru transparan */
-            --graph-text-color: rgba(240, 240, 240, 0.7);
         }
 
         body {
@@ -405,38 +400,21 @@
             font-size: 0.95em;
         }
 
-        /* --- Rain Chart Style --- */
-        .rain-chart-container {
+        /* --- Placeholder for Charts/More Details --- */
+        .chart-placeholder {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-        .rain-chart-container h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .rain-chart-canvas {
-            width: 100%;
-            height: 120px; /* Tinggi canvas untuk grafik */
-            display: block; /* Hapus spasi bawah default canvas */
-        }
-        .rain-chart-labels {
+            height: 150px; /* Tinggi placeholder untuk grafik */
             display: flex;
-            justify-content: space-between;
-            font-size: 0.7em;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.9em;
             opacity: 0.6;
-            margin-top: 5px;
-            padding: 0 5px;
-        }
-        .rain-chart-labels div {
-            flex: 1;
+            margin-bottom: 20px;
+            color: var(--text-color-faded);
             text-align: center;
         }
-
 
         /* --- Bottom Navigation Bar --- */
         .bottom-nav {
@@ -551,8 +529,7 @@
 
     <div class="container">
         <div class="header">
-            <div id="realtimeClock" class="realtime-clock"></div>
-            <h1 class="logo">Seather<span class="icon">☁️</span></h1>
+            <div id="realtimeClock" class="realtime-clock"></div> <h1 class="logo">Seather<span class="icon">☁️</span></h1>
             <p class="subtitle">Prakiraan Cuaca Real-time yang Lebih Akurat</p>
         </div>
 
@@ -570,7 +547,7 @@
                 <span class="icon">🏠</span>
                 <span>Home</span>
             </div>
-            <div class="nav-item" id="mapNavItem">
+            <div class="nav-item">
                 <span class="icon">🗺️</span>
                 <span>Map</span>
             </div>
@@ -591,15 +568,14 @@
             constructor() {
                 this.weatherCard = document.getElementById('weatherCard');
                 this.loadingState = document.getElementById('loadingState');
-                this.realtimeClockElement = document.getElementById('realtimeClock');
+                this.realtimeClockElement = document.getElementById('realtimeClock'); // Ambil elemen jam
                 this.currentLocation = null;
                 this.init();
-                this.setupNavInteractions(); // Panggil fungsi setup interaksi navbar
             }
 
             async init() {
-                this.updateRealtimeClock();
-                setInterval(() => this.updateRealtimeClock(), 1000);
+                this.updateRealtimeClock(); // Panggil pertama kali saat inisialisasi
+                setInterval(() => this.updateRealtimeClock(), 1000); // Perbarui setiap detik
                 try {
                     await this.requestLocation();
                 } catch (error) {
@@ -662,6 +638,7 @@
                     const lat = this.currentLocation.lat;
                     const lon = this.currentLocation.lon;
 
+                    // Menggunakan Wttr.in API sebagai alternatif tanpa API Key
                     const wttrUrl = `https://wttr.in/${lat},${lon}?format=j1`;
 
                     const response = await fetch(wttrUrl);
@@ -724,8 +701,8 @@
 
                     dayCondition = dayCondition || dayData.hourly[0].weatherDesc[0].value; // Fallback jika tidak ada data siang hari
 
-                    let displayDay = new Date(dayData.date).toLocaleDateString('id-ID', { weekday: 'short' });
-                    if (index === 0) displayDay = 'Today';
+                    let displayDay = new Date(dayData.date).toLocaleDateString('id-ID', { weekday: 'short' }); // "Sen", "Sel"
+                    if (index === 0) displayDay = 'Today'; // Sesuai dengan gambar
                     else if (index === 1) displayDay = 'Tomorrow';
 
                     forecast.push({
@@ -734,10 +711,10 @@
                         condition: dayCondition,
                         tempMin: dayTempMin,
                         tempMax: dayTempMax,
-                        hourlyData: dayData.hourly.map(h => ({ // Ambil semua data per jam
-                            time: (parseInt(h.time)/100) + ':00',
+                        // Untuk contoh jam, ambil beberapa data per jam pertama
+                        hourlyData: dayData.hourly.slice(0, 6).map(h => ({
+                            time: (parseInt(h.time)/100) + ':00', // Format jam 13:00
                             temp: parseInt(h.tempC),
-                            condition: h.weatherDesc[0].value,
                             icon: this.getWeatherIconWttr(h.weatherDesc[0].value)
                         }))
                     });
@@ -776,23 +753,6 @@
                     return '🌡️';
                 }
             }
-
-            // Fungsi baru untuk memetakan kondisi cuaca ke level curah hujan
-            getRainfallLevel(condition) {
-                const conditionLower = condition.toLowerCase();
-                if (conditionLower.includes('heavy rain') || conditionLower.includes('torrential rain') || conditionLower.includes('extreme rain')) {
-                    return 4; // Sangat tinggi
-                } else if (conditionLower.includes('moderate rain') || conditionLower.includes('rain') || conditionLower.includes('patchy rain possible')) {
-                    return 3; // Tinggi
-                } else if (conditionLower.includes('light rain') || conditionLower.includes('drizzle') || conditionLower.includes('patchy light drizzle')) {
-                    return 2; // Sedang
-                } else if (conditionLower.includes('mist') || conditionLower.includes('fog') || conditionLower.includes('haze') || conditionLower.includes('freezing fog')) {
-                    return 1; // Sangat rendah (embun)
-                } else if (conditionLower.includes('clear') || conditionLower.includes('sunny') || conditionLower.includes('partly cloudy') || conditionLower.includes('cloudy') || conditionLower.includes('overcast')) {
-                    return 0; // Tidak ada hujan
-                }
-                return 0; // Default
-            }
             
             displayWeatherData(data) {
                 const weatherIcon = this.getWeatherIconWttr(data.current.condition); 
@@ -803,7 +763,7 @@
                 // Membangun string untuk hourly forecast
                 const hourlyForecastHtml = data.forecast[0].hourlyData.map(hour => `
                     <div class="forecast-item-full">
-                        <div class="time-day">${hour.time.replace(':00', '')}</div>
+                        <div class="time-day">${hour.time}</div>
                         <div class="icon">${hour.icon}</div>
                         <div class="temp">${hour.temp}°C</div>
                     </div>
@@ -870,19 +830,19 @@
                     <div class="weather-section-card">
                         <h3 class="section-title">Prakiraan Waktu</h3>
                         <div class="forecast-summary-grid">
-                            <div class="forecast-summary-item" data-section="hourly">
+                            <div class="forecast-summary-item">
                                 <div class="title">Hour</div>
-                                <div class="value">${data.forecast[0].hourlyData[0].time.replace(':00', '')}</div>
+                                <div class="value">${data.forecast[0].hourlyData[0].time}</div>
                                 <div class="desc">${data.forecast[0].hourlyData[0].temp}°C</div>
                                 <div class="action-btn">Detail</div>
                             </div>
-                            <div class="forecast-summary-item" data-section="daily">
+                            <div class="forecast-summary-item">
                                 <div class="title">Daily</div>
                                 <div class="value">${data.forecast[0].tempMin}° - ${data.forecast[0].tempMax}°</div>
                                 <div class="desc">${data.forecast[0].condition}</div>
                                 <div class="action-btn">Detail</div>
                             </div>
-                            <div class="forecast-summary-item" data-section="weekly">
+                            <div class="forecast-summary-item">
                                 <div class="title">Weekly</div>
                                 <div class="value">Coming</div>
                                 <div class="desc">Soon</div>
@@ -898,10 +858,15 @@
                         </div>
                     </div>
 
-                    <div class="weather-section-card rain-chart-container">
-                        <h3 class="section-title">Curah Hujan Beberapa Jam Kedepan</h3>
-                        <canvas id="rainChartCanvas" class="rain-chart-canvas"></canvas>
-                        <div class="rain-chart-labels" id="rainChartLabels"></div>
+                    <div class="weather-section-card">
+                        <h3 class="section-title">Prakiraan Beberapa Hari</h3>
+                        <div class="full-forecast-list">
+                            ${dailyForecastHtml}
+                        </div>
+                    </div>
+
+                    <div class="weather-section-card chart-placeholder">
+                        Grafik Interaktif Cuaca (Placeholder)
                     </div>
 
                     <div class="data-source">
@@ -911,119 +876,6 @@
                 `;
 
                 this.weatherCard.style.animation = 'fadeInUp 0.6s ease-out';
-
-                // Gambar grafik setelah elemen canvas ada di DOM
-                this.drawRainfallChart(data.forecast[0].hourlyData);
-                this.setupDetailCardInteractions(); // Panggil setelah konten kartu dimuat
-            }
-
-            // Fungsi baru untuk menggambar grafik curah hujan
-            drawRainfallChart(hourlyData) {
-                const canvas = document.getElementById('rainChartCanvas');
-                if (!canvas) {
-                    console.error("Canvas element not found for rain chart.");
-                    return;
-                }
-
-                const ctx = canvas.getContext('2d');
-                const width = canvas.offsetWidth; // Gunakan offsetWidth untuk lebar asli
-                const height = canvas.offsetHeight; // Gunakan offsetHeight untuk tinggi asli
-                canvas.width = width; // Set attribute width
-                canvas.height = height; // Set attribute height
-
-                const padding = 20;
-                const chartHeight = height - padding * 2;
-                const chartWidth = width - padding * 2;
-
-                const dataPoints = hourlyData.slice(0, 8); // Ambil 8 jam ke depan (Wttr.in biasanya 24 jam/hari)
-                if (dataPoints.length === 0) {
-                    // Tampilkan pesan jika tidak ada data
-                    ctx.font = "14px Inter";
-                    ctx.fillStyle = var(--graph-text-color);
-                    ctx.textAlign = "center";
-                    ctx.fillText("Tidak ada data curah hujan untuk grafik.", width / 2, height / 2);
-                    return;
-                }
-
-                const rainfallLevels = dataPoints.map(item => this.getRainfallLevel(item.condition));
-                const maxLevel = Math.max(...rainfallLevels, 1); // Minimal 1 agar grafik tidak flat jika semua 0
-                const interval = chartWidth / (dataPoints.length - 1);
-
-                ctx.clearRect(0, 0, width, height);
-
-                // Gambar Area Bawah Grafik (Fill)
-                ctx.beginPath();
-                ctx.moveTo(padding, padding + chartHeight - (rainfallLevels[0] / maxLevel) * chartHeight);
-                for (let i = 0; i < dataPoints.length; i++) {
-                    const x = padding + i * interval;
-                    const y = padding + chartHeight - (rainfallLevels[i] / maxLevel) * chartHeight;
-                    ctx.lineTo(x, y);
-                }
-                ctx.lineTo(padding + (dataPoints.length - 1) * interval, padding + chartHeight); // Kembali ke sumbu X
-                ctx.lineTo(padding, padding + chartHeight); // Tutup area
-                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--graph-fill-color');
-                ctx.fill();
-                ctx.closePath();
-
-                // Gambar Garis Grafik
-                ctx.beginPath();
-                ctx.moveTo(padding, padding + chartHeight - (rainfallLevels[0] / maxLevel) * chartHeight);
-                for (let i = 0; i < dataPoints.length; i++) {
-                    const x = padding + i * interval;
-                    const y = padding + chartHeight - (rainfallLevels[i] / maxLevel) * chartHeight;
-                    ctx.lineTo(x, y);
-                    // Gambar titik
-                    ctx.arc(x, y, 3, 0, Math.PI * 2, false);
-                    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--graph-line-color');
-                    ctx.fill();
-                    ctx.beginPath(); // Mulai path baru untuk garis
-                    ctx.moveTo(x, y);
-                }
-                ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--graph-line-color');
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.closePath();
-
-                // Gambar label jam di bawah grafik
-                const labelsContainer = document.getElementById('rainChartLabels');
-                labelsContainer.innerHTML = ''; // Kosongkan label lama
-                dataPoints.forEach((item, index) => {
-                    const labelDiv = document.createElement('div');
-                    labelDiv.textContent = item.time.replace(':00', ''); // Hanya jam
-                    labelsContainer.appendChild(labelDiv);
-                });
-            }
-
-            setupNavInteractions() {
-                const navItems = document.querySelectorAll('.nav-item');
-                navItems.forEach(item => {
-                    item.addEventListener('click', () => {
-                        navItems.forEach(nav => nav.classList.remove('active'));
-                        item.classList.add('active');
-                        // Di sini Anda bisa menambahkan logika untuk mengubah tampilan konten
-                        // berdasarkan item navigasi yang diklik (misal: tampilkan peta, notifikasi, dll.)
-                        console.log(`Navigasi ke: ${item.querySelector('span:last-child').textContent}`);
-                    });
-                });
-
-                // Contoh klik pada FAB (Floating Action Button)
-                const fabButton = document.querySelector('.fab-button');
-                fabButton.addEventListener('click', () => {
-                    alert('FAB Ditekan! Tambahkan fungsi utama di sini.');
-                });
-            }
-
-            setupDetailCardInteractions() {
-                const detailButtons = document.querySelectorAll('.forecast-summary-item .action-btn');
-                detailButtons.forEach(button => {
-                    button.addEventListener('click', (event) => {
-                        const parentCard = event.target.closest('.forecast-summary-item');
-                        const section = parentCard.dataset.section;
-                        alert(`Anda mengklik Detail untuk bagian: ${section}. Implementasikan tampilan detail di sini.`);
-                        // Di sini Anda bisa menambahkan logika untuk menampilkan modal,
-                        // atau menggulir ke bagian tertentu, atau memuat data lebih detail.
-                    });
-                });
             }
 
             showError(message) {
